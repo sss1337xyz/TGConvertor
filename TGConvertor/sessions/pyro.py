@@ -12,6 +12,7 @@ from ..exceptions import ValidationError
 
 
 SCHEMA = """
+-- Таблица sessions
 CREATE TABLE sessions (
     dc_id     INTEGER PRIMARY KEY,
     api_id    INTEGER,
@@ -22,31 +23,32 @@ CREATE TABLE sessions (
     is_bot    INTEGER
 );
 
+-- Таблица peers
 CREATE TABLE peers (
     id             INTEGER PRIMARY KEY,
     access_hash    INTEGER,
     type           INTEGER NOT NULL,
-    username       TEXT,
     phone_number   TEXT,
     last_update_on INTEGER NOT NULL DEFAULT (CAST(STRFTIME('%s', 'now') AS INTEGER))
 );
-
+-- Таблица version
 CREATE TABLE version (
     number INTEGER PRIMARY KEY
 );
 
+-- Индексы
 CREATE INDEX idx_peers_id ON peers (id);
-CREATE INDEX idx_peers_username ON peers (username);
 CREATE INDEX idx_peers_phone_number ON peers (phone_number);
 
+-- Триггер для обновления last_update_on в таблице peers
 CREATE TRIGGER trg_peers_last_update_on
-    AFTER UPDATE
-    ON peers
+    AFTER UPDATE ON peers
 BEGIN
     UPDATE peers
     SET last_update_on = CAST(STRFTIME('%s', 'now') AS INTEGER)
     WHERE id = NEW.id;
 END;
+
 """
 
 
