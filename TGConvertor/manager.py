@@ -1,10 +1,13 @@
 from pathlib import Path
 from typing import Type, Union
+
 from opentele.api import API, APIData
-from .sessions.pyro import PyroSession
-from .sessions.tele import TeleSession
-from .sessions.tdata import TDataSession
+
 from .exceptions import ValidationError
+from .sessions.pyro import PyroSession
+from .sessions.tdata import TDataSession
+from .sessions.tele import TeleSession
+
 
 class SessionManager:
     def __init__(
@@ -15,6 +18,8 @@ class SessionManager:
         valid: None | bool = None,
         api: Type[APIData] = API.TelegramDesktop,
         phone_number: str = None,
+        server_address: str = None,
+        port: int = None,
     ):
         """
         Initializes a SessionManager instance with the specified parameters.
@@ -35,6 +40,8 @@ class SessionManager:
         self.user = None
         self.client = None
         self.phone_number = phone_number
+        self.server_address = server_address
+        self.port = port
 
     async def __aenter__(self):
         """
@@ -78,7 +85,9 @@ class SessionManager:
             auth_key=session.auth_key,
             api=api,
             phone_number=session.phone_number,
-            user_id=session.user_id
+            user_id=session.user_id,
+            server_address=session.server_address,
+            port=session.port,
         )
 
     @classmethod
@@ -94,11 +103,7 @@ class SessionManager:
             SessionManager: An instance initialized from the Telethon string.
         """
         session = TeleSession.from_string(string)
-        return cls(
-            dc_id=session.dc_id,
-            auth_key=session.auth_key,
-            api=api
-        )
+        return cls(dc_id=session.dc_id, auth_key=session.auth_key, api=api)
 
     @classmethod
     async def from_pyrogram_file(cls, file: Union[Path, str], api=API.TelegramDesktop):
@@ -152,11 +157,7 @@ class SessionManager:
             SessionManager: An instance initialized from the TData session folder.
         """
         session = TDataSession.from_tdata(folder)
-        return cls(
-            auth_key=session.auth_key,
-            dc_id=session.dc_id,
-            api=session.api
-        )
+        return cls(auth_key=session.auth_key, dc_id=session.dc_id, api=session.api)
 
     async def to_pyrogram_file(self, path: Union[Path, str]):
         """
@@ -213,7 +214,9 @@ class SessionManager:
             dc_id=self.dc_id,
             auth_key=self.auth_key,
             user_id=self.user_id,
-            api_id=self.api.api_id
+            api_id=self.api.api_id,
+            server_address=self.server_address,
+            port=self.port,
         )
 
     @property

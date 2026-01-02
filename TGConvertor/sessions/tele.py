@@ -6,7 +6,6 @@ from typing import Type
 
 import aiosqlite
 from opentele.api import APIData
-from pyrogram.session.internals.data_center import DataCenter
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
@@ -168,9 +167,7 @@ class TeleSession:
 
     def to_string(self) -> str:
         if self.server_address is None:
-            self.server_address, self.port = DataCenter(
-                self.dc_id, False, False, False
-            )
+            return ""
         ip = ipaddress.ip_address(self.server_address).packed
         return self.CURRENT_VERSION + self.encode(struct.pack(
             self._STRUCT_PREFORMAT.format(len(ip)),

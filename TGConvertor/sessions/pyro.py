@@ -1,8 +1,8 @@
 import base64
 import secrets
 import struct
-from typing import Type, Union
 from pathlib import Path
+from typing import Type, Union
 
 import aiosqlite
 from opentele.api import APIData
@@ -10,11 +10,12 @@ from pyrogram.client import Client
 
 from ..exceptions import ValidationError
 
-
 SCHEMA = """
 -- Таблица sessions
 CREATE TABLE sessions (
     dc_id     INTEGER PRIMARY KEY,
+    server_address TEXT,
+    port      INTEGER,
     api_id    INTEGER,
     test_mode INTEGER,
     auth_key  BLOB,
@@ -59,23 +60,43 @@ class PyroSession:
     STRING_SIZE_64 = 356
     STRING_FORMAT = ">BI?256sQ?"
     TABLES = {
-        "sessions": {"dc_id", "test_mode", "auth_key", "date", "user_id", "is_bot"},
-        "peers": {"id", "access_hash", "type", "username", "phone_number", "last_update_on"},
-        "version": {"number"}
+        "sessions": {
+            "dc_id",
+            "server_address",
+            "port",
+            "test_mode",
+            "auth_key",
+            "date",
+            "user_id",
+            "is_bot",
+        },
+        "peers": {
+            "id",
+            "access_hash",
+            "type",
+            "username",
+            "phone_number",
+            "last_update_on",
+        },
+        "version": {"number"},
     }
 
     def __init__(
         self,
         *,
         dc_id: int,
+        server_address: str = None,
+        port: int = None,
         auth_key: bytes,
         user_id: None | int = None,
         is_bot: bool = False,
         test_mode: bool = False,
         api_id: None | int = None,
-        date: int | None = None
+        date: int | None = None,
     ):
         self.dc_id = dc_id
+        self.server_address = server_address
+        self.port = port
         self.auth_key = auth_key
         self.user_id = user_id
         self.is_bot = is_bot
@@ -95,14 +116,14 @@ class PyroSession:
                 string_format,
                 base64.urlsafe_b64decode(
                     session_string + "=" * (-len(session_string) % 4)
-                )
+                ),
             )
         else:
             dc_id, api_id, test_mode, auth_key, user_id, is_bot = struct.unpack(
                 cls.STRING_FORMAT,
                 base64.urlsafe_b64decode(
                     session_string + "=" * (-len(session_string) % 4)
-                )
+                ),
             )
 
         return cls(
@@ -135,17 +156,18 @@ class PyroSession:
                 async with db.execute(sql) as cursor:
                     tables = {row["name"] for row in await cursor.fetchall()}
 
-                if tables != set(cls.TABLES.keys()):
+                # Check that required tables exist (not strict equality)
+                required_tables = {"sessions", "version"}
+                if not required_tables.issubset(tables):
                     return False
 
-                for table, session_columns in cls.TABLES.items():
-                    sql = f'pragma table_info("{table}")'
-                    async with db.execute(sql) as cur:
-                        columns = {row["name"] for row in await cur.fetchall()}
-                        if "api_id" in columns:
-                            columns.remove("api_id")
-                        if session_columns != columns:
-                            return False
+                # Check sessions table has required columns
+                sql = 'pragma table_info("sessions")'
+                async with db.execute(sql) as cur:
+                    columns = {row["name"] for row in await cur.fetchall()}
+                    required_columns = {"dc_id", "auth_key", "user_id", "is_bot"}
+                    if not required_columns.issubset(columns):
+                        return False
 
         except aiosqlite.DatabaseError:
             return False
@@ -153,10 +175,7 @@ class PyroSession:
         return True
 
     def client(
-        self,
-        api: Type[APIData],
-        proxy: None | dict = None,
-        no_updates: bool = True
+        self, api: Type[APIData], proxy: None | dict = None, no_updates: bool = True
     ) -> Client:
         client = Client(
             name=secrets.token_urlsafe(8),
@@ -181,7 +200,7 @@ class PyroSession:
             self.test_mode,
             self.auth_key,
             self.user_id or 9999,
-            self.is_bot
+            self.is_bot,
         )
         return base64.urlsafe_b64encode(packed).decode().rstrip("=")
 
@@ -189,15 +208,17 @@ class PyroSession:
         async with aiosqlite.connect(path) as db:
             await db.executescript(SCHEMA)
             await db.commit()
-            sql = "INSERT INTO sessions VALUES (?, ?, ?, ?, ?, ?, ?)"
+            sql = "INSERT INTO sessions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
             params = (
                 self.dc_id,
+                self.server_address,
+                self.port,
                 self.api_id,
                 self.test_mode,
                 self.auth_key,
                 0,
                 self.user_id or 9999,
-                self.is_bot
+                self.is_bot,
             )
             await db.execute(sql, params)
             await db.commit()
