@@ -1,0 +1,16 @@
+LICENSE
+README.md
+setup.py
+TGConvertor/__init__.py
+TGConvertor/__main__.py
+TGConvertor/exceptions.py
+TGConvertor/manager.py
+TGConvertor.egg-info/PKG-INFO
+TGConvertor.egg-info/SOURCES.txt
+TGConvertor.egg-info/dependency_links.txt
+TGConvertor.egg-info/entry_points.txt
+TGConvertor.egg-info/top_level.txt
+TGConvertor/sessions/__init__.py
+TGConvertor/sessions/pyro.py
+TGConvertor/sessions/tdata.py
+TGConvertor/sessions/tele.py

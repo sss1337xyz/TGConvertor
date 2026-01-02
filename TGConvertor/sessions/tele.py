@@ -51,12 +51,10 @@ CREATE TABLE update_state (
 
 
 class TeleSession:
-    _STRUCT_PREFORMAT = '>B{}sH256s'
-    CURRENT_VERSION = '1'
+    _STRUCT_PREFORMAT = ">B{}sH256s"
+    CURRENT_VERSION = "1"
     TABLES = {
-        "sessions": {
-            "dc_id", "server_address", "port", "auth_key", "takeout_id"
-        },
+        "sessions": {"dc_id", "server_address", "port", "auth_key", "takeout_id"},
         "entities": {"id", "hash", "username", "phone", "name", "date"},
         "sent_files": {"md5_digest", "file_size", "type", "id", "hash"},
         "update_state": {"id", "pts", "qts", "date", "seq"},
@@ -64,15 +62,15 @@ class TeleSession:
     }
 
     def __init__(
-            self,
-            *,
-            dc_id: int,
-            auth_key: bytes,
-            server_address: None | str = None,
-            port: None | int = None,
-            takeout_id: None | int = None,
-            user_id: None | int = None,
-            phone_number: None | int = None
+        self,
+        *,
+        dc_id: int,
+        auth_key: bytes,
+        server_address: None | str = None,
+        port: None | int = None,
+        takeout_id: None | int = None,
+        user_id: None | int = None,
+        phone_number: None | int = None,
     ):
         self.dc_id = dc_id
         self.auth_key = auth_key
@@ -108,10 +106,14 @@ class TeleSession:
                 session = await cursor.fetchone()
         async with aiosqlite.connect(path) as db:
             db.row_factory = aiosqlite.Row
-            async with db.execute("SELECT * FROM entities WHERE id NOT LIKE 0") as cursor:
+            async with db.execute(
+                "SELECT * FROM entities WHERE id NOT LIKE 0"
+            ) as cursor:
                 entities = {**(await cursor.fetchone())}
 
-        return cls(user_id=entities.get('id'), phone_number=entities.get('phone'), **session)
+        return cls(
+            user_id=entities.get("id"), phone_number=entities.get("phone"), **session
+        )
 
     @classmethod
     async def validate(cls, path: Path) -> bool:
@@ -139,17 +141,14 @@ class TeleSession:
 
     @staticmethod
     def encode(x: bytes) -> str:
-        return base64.urlsafe_b64encode(x).decode('ascii')
+        return base64.urlsafe_b64encode(x).decode("ascii")
 
     @staticmethod
     def decode(x: str) -> bytes:
         return base64.urlsafe_b64decode(x)
 
     def client(
-            self,
-            api: Type[APIData],
-            proxy: None | dict = None,
-            no_updates: bool = True
+        self, api: Type[APIData], proxy: None | dict = None, no_updates: bool = True
     ):
         client = TelegramClient(
             session=StringSession(self.to_string()),
@@ -169,13 +168,15 @@ class TeleSession:
         if self.server_address is None:
             return ""
         ip = ipaddress.ip_address(self.server_address).packed
-        return self.CURRENT_VERSION + self.encode(struct.pack(
-            self._STRUCT_PREFORMAT.format(len(ip)),
-            self.dc_id,
-            ip,
-            self.port,
-            self.auth_key
-        ))
+        return self.CURRENT_VERSION + self.encode(
+            struct.pack(
+                self._STRUCT_PREFORMAT.format(len(ip)),
+                self.dc_id,
+                ip,
+                self.port,
+                self.auth_key,
+            )
+        )
 
     async def to_file(self, path: Path):
         async with aiosqlite.connect(path) as db:
@@ -187,7 +188,7 @@ class TeleSession:
                 self.server_address,
                 self.port,
                 self.auth_key,
-                self.takeout_id
+                self.takeout_id,
             )
             await db.execute(sql, params)
             await db.commit()

@@ -18,8 +18,6 @@ class SessionManager:
         valid: None | bool = None,
         api: Type[APIData] = API.TelegramDesktop,
         phone_number: str = None,
-        server_address: str = None,
-        port: int = None,
     ):
         """
         Initializes a SessionManager instance with the specified parameters.
@@ -40,8 +38,6 @@ class SessionManager:
         self.user = None
         self.client = None
         self.phone_number = phone_number
-        self.server_address = server_address
-        self.port = port
 
     async def __aenter__(self):
         """
@@ -86,8 +82,6 @@ class SessionManager:
             api=api,
             phone_number=session.phone_number,
             user_id=session.user_id,
-            server_address=session.server_address,
-            port=session.port,
         )
 
     @classmethod
@@ -215,8 +209,6 @@ class SessionManager:
             auth_key=self.auth_key,
             user_id=self.user_id,
             api_id=self.api.api_id,
-            server_address=self.server_address,
-            port=self.port,
         )
 
     @property

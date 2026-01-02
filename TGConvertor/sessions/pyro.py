@@ -14,8 +14,6 @@ SCHEMA = """
 -- Таблица sessions
 CREATE TABLE sessions (
     dc_id     INTEGER PRIMARY KEY,
-    server_address TEXT,
-    port      INTEGER,
     api_id    INTEGER,
     test_mode INTEGER,
     auth_key  BLOB,
@@ -85,8 +83,6 @@ class PyroSession:
         self,
         *,
         dc_id: int,
-        server_address: str = None,
-        port: int = None,
         auth_key: bytes,
         user_id: None | int = None,
         is_bot: bool = False,
@@ -95,8 +91,6 @@ class PyroSession:
         date: int | None = None,
     ):
         self.dc_id = dc_id
-        self.server_address = server_address
-        self.port = port
         self.auth_key = auth_key
         self.user_id = user_id
         self.is_bot = is_bot
@@ -208,11 +202,9 @@ class PyroSession:
         async with aiosqlite.connect(path) as db:
             await db.executescript(SCHEMA)
             await db.commit()
-            sql = "INSERT INTO sessions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            sql = "INSERT INTO sessions VALUES (?, ?, ?, ?, ?, ?, ?)"
             params = (
                 self.dc_id,
-                self.server_address,
-                self.port,
                 self.api_id,
                 self.test_mode,
                 self.auth_key,
